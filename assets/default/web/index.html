@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Hello World!</title>
+    <link rel="stylesheet" href="/css/xterm.css" />
+    <script src="/js/xterm.js"></script>
+  </head>
+  <body>
+    <h1>SerialTcp Web Interface</h1>
+
+    <div id="serial"></div>
+    <br/>
+    <div id="terminal"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+      var term = document.term = new Terminal({
+        cols: 80,
+        rows: 24,
+        useStyle: true,
+        screenKeys: true,
+        cursorBlink: true
+      });
+      term.open(document.getElementById('terminal'));
+
+      const s = io.connect('/serial');
+      s.on('connect', () => {
+        console.log(`connected`);
+        s.on('setup', (filepath, configs) => {
+          document.term.write(`DATA from \x1B[1;3;31m${filepath}\x1B[0m\r\n`);
+          document.getElementById('serial').innerText = `${filepath}   ${JSON.stringify(configs)}`;
+          console.log(configs);
+        });
+        s.on('data', data => {
+          var bytes = new Uint8Array(data)
+          // console.log(`receive ${data.byteLength} bytes`);
+          // document.data = data;
+          document.term.writeUtf8(bytes);
+        });
+      });
+</script>
+</html>

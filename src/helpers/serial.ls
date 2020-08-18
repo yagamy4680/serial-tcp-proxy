@@ -34,6 +34,9 @@ module.exports = exports = class SerialServer extends EventEmitter
     xx = p.pipe ts .pipe reader
     return done!
 
+  write: (chunk) ->
+    return @p.write chunk
+
   on_error: (err) ->
     console.log "err => #{err}"
     @.logger.error err

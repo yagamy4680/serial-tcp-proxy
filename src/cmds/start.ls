@@ -1,6 +1,7 @@
 SerialPort = require \serialport
 SerialServer = require \../helpers/serial
 TcpServer = require \../helpers/tcp
+WebServer = require \../helpers/web
 require! <[pino]>
 
 
@@ -10,7 +11,7 @@ ERR_EXIT = (logger, err) ->
 
 
 module.exports = exports =
-  command: "start <filepath>"
+  command: "start <filepath> [<assetDir>]"
   describe: "startup a tcp proxy server on the serial port with specified path"
 
   builder: (yargs) ->
@@ -61,8 +62,17 @@ module.exports = exports =
     ts = new TcpServer logger, argv.port
     (terr) <- ts.start
     return ERR_EXIT logger, terr if terr?
+    ws = new WebServer logger, argv.port + 1, argv.assetDir, filepath, opts
+    (werr) <- ws.start
+    return ERR_EXIT logger, werr if werr?
+
     ss.on \bytes, (chunk) -> 
-      logger.debug "receive #{chunk.length} bytes (#{(chunk.toString 'hex').toUpperCase!})"
+      logger.debug "receive #{chunk.length} bytes from serial (#{(chunk.toString 'hex').toUpperCase!})"
       ts.broadcast chunk
+      ws.broadcast chunk
 
     ss.on \line, (line) -> logger.info "#{filepath.yellow}: #{line}"
+
+    ts.on \data, (chunk, connection) ->
+      logger.info "receive #{chunk.length} bytes from tcp (#{(chunk.toString 'hex').toUpperCase!})"
+      ss.write chunk
