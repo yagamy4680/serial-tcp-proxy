@@ -1,0 +1,43 @@
+{
+  "name": "serial-tcp-proxy",
+  "version": "0.0.1",
+  "description": "TCP Proxy on specific serial port",
+  "keywords": [
+    "serialport",
+    "tcp",
+    "proxy"
+  ],
+  "homepage": "https://github.com/yagamy4680/serial-tcp-proxy",
+  "author": "yagamy <yagamy@gmail.com>",
+  "contributors": [],
+  "license": "MIT",
+  "main": "index",
+  "files": [
+    "index.js",
+    "lib/",
+    "bin/",
+    "src/"
+  ],
+  "dependencies": {
+    "colors": "^1.4.0",
+    "livescript": "github:ischenkodv/LiveScript",
+    "request": "^2.88.2",
+    "serialport": "^9.0.1",
+    "yargs": "^14.2.0"
+  },
+  "devDependencies": {
+    "standard-version": "^8.0.2"
+  },
+  "optionalDependencies": {},
+  "scripts": {
+    "release": "standard-version"
+  },
+  "bin": {
+    "ttt": "./index.js"
+  },
+  "pkg": {
+    "assets": [
+      "src/**/*.ls"
+    ]
+  }
+}
