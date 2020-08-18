@@ -32,10 +32,8 @@ module.exports = exports = class SerialServer extends EventEmitter
 
     ts = through2 cb
     xx = p.pipe ts .pipe reader
-    xx.on 'end', logger.warn "#{filepath} stream ends."
     return done!
 
   on_error: (err) ->
-    console.log "err => #{error}"
+    console.log "err => #{err}"
     @.logger.error err
-

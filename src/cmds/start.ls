@@ -1,7 +1,12 @@
 SerialPort = require \serialport
 SerialServer = require \../helpers/serial
+TcpServer = require \../helpers/tcp
 require! <[pino]>
 
+
+ERR_EXIT = (logger, err) ->
+  logger.error err
+  return process.exit 1
 
 
 module.exports = exports =
@@ -51,7 +56,13 @@ module.exports = exports =
     xs = xs.pop!
     logger.debug "found #{filepath.yellow} => #{JSON.stringify xs}"
     ss = new SerialServer logger, filepath, baudRate, parity, stopBits, dataBits
-    ss.on \bytes, (chunk) -> logger.debug "receive #{chunk.length} bytes (#{(chunk.toString 'hex').toUpperCase!})"
+    (serr) <- ss.start
+    return ERR_EXIT logger, terr if terr?
+    ts = new TcpServer logger, argv.port
+    (terr) <- ts.start
+    return ERR_EXIT logger, terr if terr?
+    ss.on \bytes, (chunk) -> 
+      logger.debug "receive #{chunk.length} bytes (#{(chunk.toString 'hex').toUpperCase!})"
+      ts.broadcast chunk
+
     ss.on \line, (line) -> logger.info "#{filepath.yellow}: #{line}"
-    (err) <- ss.start
-    return logger.debug err if err?

@@ -22,6 +22,7 @@
     "byline": "^5.0.0",
     "colors": "^1.4.0",
     "livescript": "github:ischenkodv/LiveScript",
+    "lodash": "^4.17.20",
     "pino": "^6.5.1",
     "pino-pretty": "^4.1.0",
     "request": "^2.88.2",
