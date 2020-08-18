@@ -19,14 +19,18 @@
     "src/"
   ],
   "dependencies": {
+    "byline": "^5.0.0",
     "colors": "^1.4.0",
     "livescript": "github:ischenkodv/LiveScript",
+    "pino": "^6.5.1",
+    "pino-pretty": "^4.1.0",
     "request": "^2.88.2",
     "serialport": "^9.0.1",
+    "through2": "^4.0.2",
     "yargs": "^14.2.0"
   },
   "devDependencies": {
-    "standard-version": "^8.0.2"
+    "standard-version": "^9.0.0"
   },
   "optionalDependencies": {},
   "scripts": {

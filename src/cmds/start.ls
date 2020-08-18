@@ -1,4 +1,8 @@
 SerialPort = require \serialport
+SerialServer = require \../helpers/serial
+require! <[pino]>
+
+
 
 module.exports = exports =
   command: "start <filepath>"
@@ -22,17 +26,32 @@ module.exports = exports =
       .alias \s, \stopbits
       .default \s, 1
       .describe \s, "stop bits"
-      .demand <[p b d y s]>
+      .alias \v, \verbose
+      .default \v, no
+      .describe \v, "verbose output"
+      .boolean 'v'
+      .demand <[p b d y s v]>
 
 
   handler: (argv) ->
     {config} = global
-    {uart, parity, filepath} = argv
+    {uart, parity, filepath, verbose} = argv
     baudRate = argv.baud
     dataBits = argv.databits
     stopBits = argv.stopbits
+    console.log "verbose = #{verbose}"
     opts = {baudRate, dataBits, parity, stopBits}
-    SerialPort.list! .then (ports) ->
-      console.dir ports
-    console.log "opts => #{JSON.stringify opts}"
-    console.log "argv => #{JSON.stringify argv}"
+    level = if verbose then 'trace' else 'info'
+    prettyPrint = translateTime: yes
+    console.log "prettyPrint => #{JSON.stringify prettyPrint}"
+    logger = pino {prettyPrint, level}
+    (ports) <- SerialPort.list! .then
+    xs = [ x for x in ports when x.path is filepath ]
+    return logger.error "no such port: #{filepath}" unless xs.length >= 1
+    xs = xs.pop!
+    logger.debug "found #{filepath.yellow} => #{JSON.stringify xs}"
+    ss = new SerialServer logger, filepath, baudRate, parity, stopBits, dataBits
+    ss.on \bytes, (chunk) -> logger.debug "receive #{chunk.length} bytes (#{(chunk.toString 'hex').toUpperCase!})"
+    ss.on \line, (line) -> logger.info "#{filepath.yellow}: #{line}"
+    (err) <- ss.start
+    return logger.debug err if err?
