@@ -2,7 +2,7 @@ SerialPort = require \serialport
 SerialServer = require \../helpers/serial
 TcpServer = require \../helpers/tcp
 WebServer = require \../helpers/web
-require! <[pino]>
+require! <[pino path]>
 
 
 ERR_EXIT = (logger, err) ->
@@ -48,7 +48,7 @@ module.exports = exports =
     console.log "verbose = #{verbose}"
     opts = {baudRate, dataBits, parity, stopBits}
     level = if verbose then 'trace' else 'info'
-    prettyPrint = translateTime: yes
+    prettyPrint = translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname'
     console.log "prettyPrint => #{JSON.stringify prettyPrint}"
     logger = pino {prettyPrint, level}
     (ports) <- SerialPort.list! .then
@@ -71,7 +71,10 @@ module.exports = exports =
       ts.broadcast chunk
       ws.broadcast chunk
 
-    ss.on \line, (line) -> logger.info "#{filepath.yellow}: #{line}"
+    filename = path.basename filepath
+    filename = filename.substring 4 if filename.startsWith "tty."
+
+    ss.on \line, (line) -> logger.info "#{filename.yellow}: #{line}"
 
     ts.on \data, (chunk, connection) ->
       logger.info "receive #{chunk.length} bytes from tcp (#{(chunk.toString 'hex').toUpperCase!})"
