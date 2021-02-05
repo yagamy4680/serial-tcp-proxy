@@ -36,16 +36,21 @@ module.exports = exports =
       .default \v, no
       .describe \v, "verbose output"
       .boolean 'v'
-      .demand <[p b d y s v]>
+      .alias \r, \raw
+      .default \r, no
+      .describe \r, "raw mode, no byline parsing"
+      .boolean 'r'
+      .demand <[p b d y s v r]>
 
 
   handler: (argv) ->
     {config} = global
-    {uart, parity, filepath, verbose} = argv
+    {uart, parity, filepath, verbose, raw} = argv
     baudRate = argv.baud
     dataBits = argv.databits
     stopBits = argv.stopbits
     console.log "verbose = #{verbose}"
+    console.log "raw = #{raw}"
     opts = {baudRate, dataBits, parity, stopBits}
     level = if verbose then 'trace' else 'info'
     prettyPrint = translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname'
@@ -56,7 +61,7 @@ module.exports = exports =
     return logger.error "no such port: #{filepath}" unless xs.length >= 1
     xs = xs.pop!
     logger.debug "found #{filepath.yellow} => #{JSON.stringify xs}"
-    ss = new SerialServer logger, filepath, baudRate, parity, stopBits, dataBits
+    ss = new SerialServer logger, filepath, baudRate, parity, stopBits, dataBits, raw
     (serr) <- ss.start
     return ERR_EXIT logger, terr if terr?
     ts = new TcpServer logger, argv.port
@@ -67,7 +72,8 @@ module.exports = exports =
     return ERR_EXIT logger, werr if werr?
 
     ss.on \bytes, (chunk) -> 
-      logger.debug "receive #{chunk.length} bytes from serial (#{(chunk.toString 'hex').toUpperCase!})"
+      DBG = if raw then logger.info else logger.debug
+      DBG.apply logger, ["receive #{chunk.length} bytes from serial (#{(chunk.toString 'hex').toUpperCase!})"]
       ts.broadcast chunk
       ws.broadcast chunk
 
