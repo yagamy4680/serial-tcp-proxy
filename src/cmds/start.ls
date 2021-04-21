@@ -39,18 +39,22 @@ module.exports = exports =
       .alias \r, \raw
       .default \r, no
       .describe \r, "raw mode, no byline parsing"
-      .boolean 'r'
+      .alias \q, \queued
+      .default \q, no
+      .describe \q, "buffered data, only for raw mode"
+      .boolean <[r q]>
       .demand <[p b d y s v r]>
 
 
   handler: (argv) ->
     {config} = global
-    {uart, parity, filepath, verbose, raw} = argv
+    {uart, parity, filepath, verbose, raw, queued} = argv
     baudRate = argv.baud
     dataBits = argv.databits
     stopBits = argv.stopbits
     console.log "verbose = #{verbose}"
     console.log "raw = #{raw}"
+    console.log "queued = #{queued}"
     opts = {baudRate, dataBits, parity, stopBits}
     level = if verbose then 'trace' else 'info'
     prettyPrint = translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname'
@@ -61,7 +65,7 @@ module.exports = exports =
     return logger.error "no such port: #{filepath}" unless xs.length >= 1
     xs = xs.pop!
     logger.debug "found #{filepath.yellow} => #{JSON.stringify xs}"
-    ss = new SerialServer logger, filepath, baudRate, parity, stopBits, dataBits, raw
+    ss = new SerialServer logger, filepath, baudRate, parity, stopBits, dataBits, raw, queued
     (serr) <- ss.start
     return ERR_EXIT logger, terr if terr?
     ts = new TcpServer logger, argv.port
