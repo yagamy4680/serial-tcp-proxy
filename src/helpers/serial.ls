@@ -12,6 +12,7 @@ module.exports = exports = class SerialServer extends EventEmitter
     opts = @opts = {autoOpen, baudRate, dataBits, parity, stopBits}
     p = @p = new SerialPort filepath, opts
     p.on \error, (err) -> return self.on_error err
+    p.on \close, -> return self.on_close!
     f = -> return self.at_timer_expiry!
     setInterval f, 100ms
   
@@ -76,5 +77,10 @@ module.exports = exports = class SerialServer extends EventEmitter
 
 
   on_error: (err) ->
-    console.log "err => #{err}"
-    @.logger.error err
+    {logger, filepath} = self = @
+    console.log "#{filepath}: err => #{err}"
+    logger.error err
+
+  on_close: ->
+    {logger, filepath} = self = @
+    logger.error "#{filepath}: port is closed!!"
