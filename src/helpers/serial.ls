@@ -25,6 +25,7 @@ module.exports = exports = class SerialServer extends EventEmitter
     return self.emit \bytes, chunk
 
   emit_bytes: (chunk, immediate=yes) ->
+    self = @
     return self.emit \bytes, chunk if immediate
     return self.emit \bytes, chunk unless @queued
     @logger.debug "receive #{chunk.length} bytes from serial (#{(chunk.toString 'hex').toUpperCase!}) but queued"
