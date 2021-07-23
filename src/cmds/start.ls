@@ -68,7 +68,7 @@ module.exports = exports =
     ss = new SerialServer logger, filepath, baudRate, parity, stopBits, dataBits, raw, queued
     (serr) <- ss.start
     return ERR_EXIT logger, terr if terr?
-    ts = new TcpServer logger, argv.port
+    ts = new TcpServer logger, argv.port, queued
     (terr) <- ts.start
     return ERR_EXIT logger, terr if terr?
     ws = new WebServer logger, argv.port + 1, argv.assetDir, filepath, opts
@@ -77,7 +77,7 @@ module.exports = exports =
 
     ss.on \bytes, (chunk) -> 
       DBG = if raw then logger.info else logger.debug
-      DBG.apply logger, ["receive #{chunk.length} bytes from serial (#{(chunk.toString 'hex').toUpperCase!})"]
+      DBG.apply logger, ["<main> receive #{chunk.length} bytes from serial (#{(chunk.toString 'hex').toUpperCase!})"]
       ts.broadcast chunk
       ws.broadcast chunk
 
@@ -87,5 +87,5 @@ module.exports = exports =
     ss.on \line, (line) -> logger.info "#{filename.yellow}: #{line}"
 
     ts.on \data, (chunk, connection) ->
-      logger.info "receive #{chunk.length} bytes from tcp (#{(chunk.toString 'hex').toUpperCase!})"
+      logger.info "<main> receive #{chunk.length} bytes from tcp (#{(chunk.toString 'hex').toUpperCase!})"
       ss.write chunk

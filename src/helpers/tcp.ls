@@ -3,22 +3,46 @@ require! <[net lodash]>
 
 
 class ConnectionHandler
-  (@parent, @c) ->
+  (@parent, @c, @queued) ->
     self = @
-    @logger = parent.logger
+    self.logger = parent.logger
+    self.data_buffer = []
+    self.alive = yes
     {remote-address, remote-family, remote-port} = c
-    @remote-address = remote-address
-    @remote = remote = if remote-address? and remote-port? then "#{remote-address}:#{remote-port}" else "localhost"
-    @prefix = prefix = "sock[#{remote.magenta}]"
+    self.remote-address = remote-address
+    self.remote = remote = if remote-address? and remote-port? then "#{remote-address}:#{remote-port}" else "localhost"
+    self.prefix = prefix = "sock[#{remote.magenta}]"
     remote-family = "unknown" unless remote-family?
-    @logger.debug "#{prefix}: incoming-connection => #{remote-family.yellow}"
+    self.logger.debug "#{prefix}: incoming-connection => #{remote-family.yellow}, with config (queued = #{queued})"
     c.on \end, -> return self.at_end!
     c.on \error, (err) -> return self.at_error err
-    c.on \data, (data) -> return parent.at_data self, c, data
+    c.on \data, (data) -> return self.at_data data
+    f = -> return self.at_timer_expiry!
+    self.timer = setInterval f, 100ms
+
+  at_data: (chunk) ->
+    {logger, c, data_buffer, queued, alive} = self = @
+    return unless alive
+    return parent.at_data self, c, chunk unless queued
+    logger.debug "receive #{chunk.length} bytes from tcp (#{(chunk.toString 'hex').toUpperCase!}) but queued"
+    xs = [ x for x in chunk ]
+    self.data_buffer = @data_buffer ++ xs
+  
+  at_timer_expiry: ->
+    {logger, c, data_buffer, queued, alive, parent} = self = @
+    return unless alive
+    return unless queued
+    return unless data_buffer.length > 0
+    self.data_buffer = []
+    chunk = Buffer.from data_buffer
+    logger.debug "emit queued data (#{(chunk.toString 'hex').toUpperCase!}), #{data_buffer.length} bytes"
+    return parent.at_data self, c, chunk
 
   finalize: ->
-    {parent, prefix, c, logger} = self = @
+    {parent, prefix, c, logger, timer} = self = @
     logger.info "#{prefix}: disconnected"
+    self.alive = no
+    clearInterval timer
     c.removeAllListeners \error
     c.removeAllListeners \data
     c.removeAllListeners \end
@@ -44,23 +68,23 @@ class ConnectionHandler
 
 
 module.exports = exports = class TcpServer extends EventEmitter
-  (pino, @port=8080) ->
+  (pino, @port=8080, @queued=no) ->
     self = @
     self.connections = []
     logger = @logger = pino.child {messageKey: 'TcpServer'}
     server = @server = net.createServer (c) -> return self.incomingConnection c
 
   start: (done) ->
-    {server, port, logger} = self = @
-    logger.debug "starting tcp server ..."
+    {server, port, logger, queued} = self = @
+    logger.debug "starting tcp server ... (queued = #{queued})"
     (err) <- server.listen port
     return done err if err?
     logger.info "listening port #{port}"
     return done!
     
   incomingConnection: (c) ->
-    {connections} = self = @
-    h = new ConnectionHandler self, c
+    {connections, queued} = self = @
+    h = new ConnectionHandler self, c, queued
     return connections.push h
 
   removeConnection: (h) ->
