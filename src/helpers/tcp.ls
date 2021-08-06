@@ -23,11 +23,11 @@ class ConnectionHandler
   at_data: (chunk) ->
     {logger, c, data_buffer, queued, alive} = self = @
     return unless alive
-    return parent.at_data self, c, chunk unless queued
+    return self.parent.at_data self, c, chunk unless queued
     logger.debug "receive #{chunk.length} bytes from tcp (#{(chunk.toString 'hex').toUpperCase!}) but queued"
     xs = [ x for x in chunk ]
     self.data_buffer = @data_buffer ++ xs
-  
+
   at_timer_expiry: ->
     {logger, c, data_buffer, queued, alive, parent} = self = @
     return unless alive
@@ -100,3 +100,4 @@ module.exports = exports = class TcpServer extends EventEmitter
   broadcast: (chunk) ->
     {connections} = self = @
     [ (c.write chunk) for c in connections ]
+
