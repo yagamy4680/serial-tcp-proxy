@@ -89,6 +89,12 @@ module.exports = exports =
 
     ss.on \line, (line) -> logger.info "#{filename.yellow}: #{line}"
 
+    ss.on \error, (err) -> 
+      process.exit 1
+    
+    ss.on \close, ->
+      process.exit 1
+
     ts.on \data, (chunk, connection) ->
       logger.info "<main> receive #{chunk.length} bytes from TCP   (#{(chunk.toString 'hex').toUpperCase!})"
       ss.write chunk

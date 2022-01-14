@@ -80,7 +80,9 @@ module.exports = exports = class SerialServer extends EventEmitter
     {logger, filepath} = self = @
     console.log "#{filepath}: err => #{err}"
     logger.error err
+    self.emit 'error', err
 
   on_close: ->
     {logger, filepath} = self = @
     logger.error "#{filepath}: port is closed!!"
+    self.emit 'close', {}
