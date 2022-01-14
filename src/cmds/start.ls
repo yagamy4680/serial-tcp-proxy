@@ -2,7 +2,7 @@ SerialPort = require \serialport
 SerialServer = require \../helpers/serial
 TcpServer = require \../helpers/tcp
 WebServer = require \../helpers/web
-require! <[pino path]>
+require! <[pino path fs]>
 
 
 ERR_EXIT = (logger, err) ->
@@ -60,12 +60,15 @@ module.exports = exports =
     prettyPrint = translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname'
     console.log "prettyPrint => #{JSON.stringify prettyPrint}"
     logger = pino {prettyPrint, level}
+    (ferr, real_filepath) <- fs.realpath filepath
+    return console.dir ferr, "failed to resolve #{filepath}" if ferr?
+    console.log "detected symbolic link, resolve #{filepath.yellow} as #{real_filepath.cyan}"
     (ports) <- SerialPort.list! .then
-    xs = [ x for x in ports when x.path is filepath ]
-    return logger.error "no such port: #{filepath}" unless xs.length >= 1
+    xs = [ x for x in ports when x.path is real_filepath ]
+    return logger.error "no such port: #{real_filepath}" unless xs.length >= 1
     xs = xs.pop!
-    logger.debug "found #{filepath.yellow} => #{JSON.stringify xs}"
-    ss = new SerialServer logger, filepath, baudRate, parity, stopBits, dataBits, raw, queued
+    logger.debug "found #{real_filepath.yellow} => #{JSON.stringify xs}"
+    ss = new SerialServer logger, real_filepath, baudRate, parity, stopBits, dataBits, raw, queued
     (serr) <- ss.start
     return ERR_EXIT logger, terr if terr?
     ts = new TcpServer logger, argv.port, queued
@@ -77,7 +80,7 @@ module.exports = exports =
 
     ss.on \bytes, (chunk) -> 
       DBG = if raw then logger.info else logger.debug
-      DBG.apply logger, ["<main> receive #{chunk.length} bytes from serial (#{(chunk.toString 'hex').toUpperCase!})"]
+      DBG.apply logger, ["<main> receive #{chunk.length} bytes from SERIAL (#{(chunk.toString 'hex').toUpperCase!})"]
       ts.broadcast chunk
       ws.broadcast chunk
 
@@ -87,5 +90,5 @@ module.exports = exports =
     ss.on \line, (line) -> logger.info "#{filename.yellow}: #{line}"
 
     ts.on \data, (chunk, connection) ->
-      logger.info "<main> receive #{chunk.length} bytes from tcp (#{(chunk.toString 'hex').toUpperCase!})"
+      logger.info "<main> receive #{chunk.length} bytes from TCP   (#{(chunk.toString 'hex').toUpperCase!})"
       ss.write chunk
