@@ -1,12 +1,14 @@
 EventEmitter = require \events
 SerialPort = require \serialport
+Recorder = require \./recorder
 require! <[byline through2]>
 
 module.exports = exports = class SerialServer extends EventEmitter
-  (pino, @filepath, @baudRate=9600, @parity='none', @stopBits=1, @dataBits=8, @raw=no, @queued=no) ->
+  (pino, @filepath, @baudRate=9600, @parity='none', @stopBits=1, @dataBits=8, @raw=no, @queued=no, capture) ->
     self = @
     self.data_buffer = []
     logger = @logger = pino.child {messageKey: 'SerialServer'}
+    recorder = @recorder = new Recorder self, logger, capture
     autoOpen = no
     connected = no
     opts = @opts = {autoOpen, baudRate, dataBits, parity, stopBits}
@@ -26,7 +28,8 @@ module.exports = exports = class SerialServer extends EventEmitter
     return self.emit \bytes, chunk
 
   emit_bytes: (chunk, immediate=yes) ->
-    self = @
+    {recorder} = self = @
+    recorder.save_data_from_serial chunk
     return self.emit \bytes, chunk if immediate
     return self.emit \bytes, chunk unless @queued
     @logger.debug "receive #{chunk.length} bytes from serial (#{(chunk.toString 'hex').toUpperCase!}) but queued"
@@ -66,15 +69,15 @@ module.exports = exports = class SerialServer extends EventEmitter
     p.on \data, (chunk) -> return self.emit_bytes chunk, no
     return done!
 
-
   start: (done) ->
+    @recorder.start!
     return @.start_raw_mode done if @raw
     return @.start_line_mode done
 
-
   write: (chunk) ->
-    return @p.write chunk
-
+    {recorder, p} = self = @
+    recorder.save_data_from_tcp chunk
+    return p.write chunk
 
   on_error: (err) ->
     {logger, filepath} = self = @
@@ -86,3 +89,4 @@ module.exports = exports = class SerialServer extends EventEmitter
     {logger, filepath} = self = @
     logger.error "#{filepath}: port is closed!!"
     self.emit 'close', {}
+
