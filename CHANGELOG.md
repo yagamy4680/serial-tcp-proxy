@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.6.2](https://gitea.t2t.io/arron/vena/compare/v0.6.1...v0.6.2) (2022-03-18)
+
+
+### Bug Fixes
+
+* **git:** update ignore list ([f157094](https://gitea.t2t.io/arron/vena/commit/f1570940d515337c7880eae7f311d8e50e5bb3f8))
+* **recorder:** direction notation shall be same as README ([dbe82b1](https://gitea.t2t.io/arron/vena/commit/dbe82b10a8ed85bd87cc668f10b6f25974c04f20))
+
 ### [0.6.1](https://gitea.t2t.io/arron/vena/compare/v0.6.0...v0.6.1) (2022-03-18)
 
 
