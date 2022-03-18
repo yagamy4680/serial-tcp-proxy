@@ -7,8 +7,8 @@
 require! <[os lodash fs]>
 {StepTimer} = require \./step-timer
 
-const RECORDER_DATA_DIRECTION_FROM_SERIAL = '<='
-const RECORDER_DATA_DIRECTION_FROM_TCP = '=>'
+const RECORDER_DATA_DIRECTION_FROM_SERIAL = '=>'
+const RECORDER_DATA_DIRECTION_FROM_TCP = '<='
 
 const DIRECTIONS =
   none:
@@ -55,7 +55,6 @@ class Recorder extends StepTimer
     uptime = now - since
     direction = RECORDER_DATA_DIRECTION_FROM_SERIAL
     packets.push {uptime, direction, chunk}
-    # logger.info "packets = #{packets.length}"
 
   save_data_from_tcp: (chunk) ->
     {logger, from_tcp, since, packets} = self = @
@@ -64,7 +63,6 @@ class Recorder extends StepTimer
     uptime = now - since
     direction = RECORDER_DATA_DIRECTION_FROM_TCP
     packets.push {uptime, direction, chunk}
-    # logger.info "packets = #{packets.length}"
 
   serialize_packet: (p) ->
     {uptime, direction, chunk} = p
@@ -74,7 +72,6 @@ class Recorder extends StepTimer
     sec = Math.floor (uptime / 1000)
     sec = lodash.padStart sec, 10, '0'
     time = "#{sec}.#{ms}"
-    # time = lodash.padStart uptime, 13, '0'
     hexes = (chunk.toString 'hex').toUpperCase!
     xs = [prefix, time, direction, hexes]
     return xs.join ' '
