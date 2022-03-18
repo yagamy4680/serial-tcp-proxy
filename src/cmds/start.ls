@@ -2,8 +2,8 @@ SerialPort = require \serialport
 SerialServer = require \../helpers/serial
 TcpServer = require \../helpers/tcp
 WebServer = require \../helpers/web
-require! <[pino path fs]>
-
+require! <[pino path fs lodash]>
+pretty = require \pino-pretty
 
 ERR_EXIT = (logger, err) ->
   logger.error err
@@ -59,14 +59,20 @@ module.exports = exports =
     console.log "raw = #{raw}"
     console.log "queued = #{queued}"
     console.log "capture = #{capture}"
-    opts = {baudRate, dataBits, parity, stopBits}
-    level = if verbose then 'trace' else 'info'
-    prettyPrint = translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname'
-    console.log "prettyPrint => #{JSON.stringify prettyPrint}"
-    logger = pino {prettyPrint, level}
+
+    level = if verbose then 'debug' else 'info'
+    options = translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname'
+    messageFormat = (log, messageKey) ->
+      {category} = log
+      message = log[messageKey]
+      return "#{category.gray}: #{message}" if category?
+      return message
+    transport = pretty translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname', sync: yes, hideObject: yes, messageFormat: messageFormat
+    logger = pino {level}, transport
+
     (ferr, real_filepath) <- fs.realpath filepath
     return console.dir ferr, "failed to resolve #{filepath}" if ferr?
-    console.log "detected symbolic link, resolve #{filepath.yellow} as #{real_filepath.cyan}"
+    logger.info "detected symbolic link, resolve #{filepath.yellow} as #{real_filepath.cyan}"
     (ports) <- SerialPort.list! .then
     xs = [ x for x in ports when x.path is real_filepath ]
     return logger.error "no such port: #{real_filepath}" unless xs.length >= 1
@@ -78,13 +84,24 @@ module.exports = exports =
     ts = new TcpServer logger, argv.port, queued
     (terr) <- ts.start
     return ERR_EXIT logger, terr if terr?
-    ws = new WebServer logger, argv.port + 1, argv.assetDir, filepath, opts
+    ws = new WebServer logger, argv.port + 1, argv.assetDir, filepath, {baudRate, dataBits, parity, stopBits}
     (werr) <- ws.start
     return ERR_EXIT logger, werr if werr?
 
-    ss.on \bytes, (chunk) -> 
+    uart = path.basename real_filepath
+
+    PRINT = (chunk, from_serial=yes) ->
+      text = chunk.toString 'hex'
+      text = text.toUpperCase!
+      text = if from_serial then text.white else text.red
+      size = chunk.length
+      size = lodash.padStart size.toString!, 3, ' '
+      direction = if from_serial then "=>".white else "<=".red
       DBG = if raw then logger.info else logger.debug
-      # DBG.apply logger, ["<main> receive #{chunk.length} bytes from SERIAL (#{(chunk.toString 'hex').toUpperCase!})"]
+      DBG.apply logger, ["#{uart} #{direction} #{size.gray} bytes: #{text}"]
+
+    ss.on \bytes, (chunk) -> 
+      PRINT chunk, yes
       ts.broadcast chunk
       ws.broadcast chunk
 
@@ -100,5 +117,5 @@ module.exports = exports =
       process.exit 1
 
     ts.on \data, (chunk, connection) ->
-      # logger.info "<main> receive #{chunk.length} bytes from TCP   (#{(chunk.toString 'hex').toUpperCase!})"
+      PRINT chunk, no
       ss.write chunk

@@ -21,7 +21,7 @@ module.exports = exports = class WebServer extends EventEmitter
     self = @
     self.connections = []
     self.assetDir = path.resolve self.assetDir
-    logger = @logger = pino.child {messageKey: 'WebServer'}
+    logger = @logger = pino.child {category: 'WebServer'}
     logger.info "assetDir => #{self.assetDir}"
     app = @app = express!
     app.use '/', express.static "#{self.assetDir}/web", {index: <[index.html index.htm]>}

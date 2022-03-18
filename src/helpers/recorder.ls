@@ -27,9 +27,11 @@ const DIRECTIONS =
 
 
 class Recorder extends StepTimer
-  (@parent, @logger, capture) ->
+  (@parent, pino, capture) ->
+    logger = pino.child {category: 'Recorder'}
     super logger, 2s, no
     self = @
+    self.logger = logger
     self.from_serial = no
     self.from_tcp = no
     xs = DIRECTIONS[capture]

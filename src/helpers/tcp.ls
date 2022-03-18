@@ -71,7 +71,7 @@ module.exports = exports = class TcpServer extends EventEmitter
   (pino, @port=8080, @queued=no) ->
     self = @
     self.connections = []
-    logger = @logger = pino.child {messageKey: 'TcpServer'}
+    logger = @logger = pino.child {category: 'TcpServer'}
     server = @server = net.createServer (c) -> return self.incomingConnection c
 
   start: (done) ->

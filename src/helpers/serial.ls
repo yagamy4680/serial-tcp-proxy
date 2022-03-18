@@ -7,7 +7,7 @@ module.exports = exports = class SerialServer extends EventEmitter
   (pino, @filepath, @baudRate=9600, @parity='none', @stopBits=1, @dataBits=8, @raw=no, @queued=no, capture) ->
     self = @
     self.data_buffer = []
-    logger = @logger = pino.child {messageKey: 'SerialServer'}
+    logger = @logger = pino.child {category: 'SerialServer'}
     recorder = @recorder = new Recorder self, logger, capture
     autoOpen = no
     connected = no
