@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.0](https://gitea.t2t.io/arron/vena/compare/v0.0.4...v0.5.0) (2022-03-18)
+
+
+### Features
+
+* **log:** refactorying logging output format, with alignments and category ([6a62e0c](https://gitea.t2t.io/arron/vena/commit/6a62e0c57ca068ca6d226ef44673fd8845d1c49d))
+* **log:** upgrade pino to v7 ([03ea209](https://gitea.t2t.io/arron/vena/commit/03ea2092ea27af4adb80606f6b242b745ec3ad19))
+* **recorder:** initial commit ([31dabc7](https://gitea.t2t.io/arron/vena/commit/31dabc749445b1c21f46592912ff4e7725e190a2))
+
+
+### Bug Fixes
+
+* **core:** exit when serial port is closed, or on error state ([722104d](https://gitea.t2t.io/arron/vena/commit/722104d27d5a8cebfc35783ddb3a9bde22c7f87d))
+* **vulnerability:** fix vulnerabilities by npm ([6a13182](https://gitea.t2t.io/arron/vena/commit/6a1318278f025fe345cf4adbbaf1dcd281535687))
+
 ### [0.0.4](https://github.com/yagamy4680/serial-tcp-proxy/compare/v0.0.3...v0.0.4) (2022-01-14)
 
 
