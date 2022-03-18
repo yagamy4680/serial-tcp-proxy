@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.6.0](https://gitea.t2t.io/arron/vena/compare/v0.5.0...v0.6.0) (2022-03-18)
+
+
+### Features
+
+* **core:** queued timer interval can be configured by command-line argument ([8ffed77](https://gitea.t2t.io/arron/vena/commit/8ffed7772ab2a3b8e9da06d8b3101848e0227341))
+
 ## [0.5.0](https://gitea.t2t.io/arron/vena/compare/v0.0.4...v0.5.0) (2022-03-18)
 
 
