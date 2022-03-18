@@ -3,9 +3,9 @@ require! <[net lodash]>
 
 
 class ConnectionHandler
-  (@parent, @c, @queued) ->
+  (@parent, @c, queued=0) ->
     self = @
-    self.logger = parent.logger
+    self.logger = logger = parent.logger
     self.data_buffer = []
     self.alive = yes
     {remote-address, remote-family, remote-port} = c
@@ -17,8 +17,12 @@ class ConnectionHandler
     c.on \end, -> return self.at_end!
     c.on \error, (err) -> return self.at_error err
     c.on \data, (data) -> return self.at_data data
+    self.queued = queued > 0
+    self.queued_interval = queued
+    return unless self.queued
     f = -> return self.at_timer_expiry!
-    self.timer = setInterval f, 100ms
+    logger.info "queued = #{self.queued_interval.toString!.yellow}ms"
+    self.queued_timer = setInterval f, self.queued_interval
 
   at_data: (chunk) ->
     {logger, c, data_buffer, queued, alive} = self = @

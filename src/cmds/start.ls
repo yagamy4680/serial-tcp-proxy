@@ -40,13 +40,13 @@ module.exports = exports =
       .default \r, no
       .describe \r, "raw mode, no byline parsing"
       .alias \q, \queued
-      .default \q, no
-      .describe \q, "buffered data, only for raw mode"
+      .default \q, 0
+      .describe \q, "buffered data for X milliseconds before emitting, only for raw mode. 0 indicates to disable this feature, and mimimal value for X is 5ms"
       .alias \c, \capture
       .default \c, "none"
       .describe \c, "enable catprue mode to record serial transmission data, might be none, serial, tcp, or both"
-      .boolean <[r q]>
-      .demand <[p b d y s v r]>
+      .boolean <[r v]>
+      .demand <[p b d y s v r q]>
 
 
   handler: (argv) ->
@@ -57,8 +57,9 @@ module.exports = exports =
     stopBits = argv.stopbits
     console.log "verbose = #{verbose}"
     console.log "raw = #{raw}"
-    console.log "queued = #{queued}"
+    console.log "queued = #{queued} (#{typeof queued})"
     console.log "capture = #{capture}"
+    queued = 5 if (queued < 5) and (queued > 0)
 
     level = if verbose then 'debug' else 'info'
     options = translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname'
