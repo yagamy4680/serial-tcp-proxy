@@ -1,6 +1,6 @@
 {
   "name": "serial-tcp-proxy",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "TCP Proxy on specific serial port",
   "keywords": [
     "serialport",

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.6.1](https://gitea.t2t.io/arron/vena/compare/v0.6.0...v0.6.1) (2022-03-18)
+
+
+### Features
+
+* **doc:** improve README ([7fda30f](https://gitea.t2t.io/arron/vena/commit/7fda30f28deb7e821cda310d1e1265f5203c9802))
+
 ## [0.6.0](https://gitea.t2t.io/arron/vena/compare/v0.5.0...v0.6.0) (2022-03-18)
 
 
