@@ -2,12 +2,31 @@ SerialPort = require \serialport
 SerialServer = require \../helpers/serial
 TcpServer = require \../helpers/tcp
 WebServer = require \../helpers/web
-require! <[pino path fs lodash]>
+require! <[pino path fs lodash byline]>
 pretty = require \pino-pretty
+{spawn} = require \child_process
+
 
 ERR_EXIT = (logger, err) ->
   logger.error err
   return process.exit 1
+
+
+class ExecutableProcess
+  (@fullpath, @logger) ->
+    self = @
+    return unless fullpath?
+    self.name = name = path.basename fullpath
+    self.child = child = spawn fullpath
+    self.stdout = byline child.stdout
+    self.stdout.on 'data', (line) -> logger.info "#{name}/stdout: #{line}"
+    self.stderr = byline child.stderr
+    self.stderr.on 'data', (line) -> logger.info "#{name}/stderr: #{line}"
+    self.stdin = child.stdin
+    child.on 'exit', -> return process.exit 0
+  
+  feed: (chunk) ->
+    @stdin.write chunk if @stdin?
 
 
 module.exports = exports =
@@ -45,13 +64,16 @@ module.exports = exports =
       .alias \c, \capture
       .default \c, "none"
       .describe \c, "enable catprue mode to record serial transmission data, might be none, serial, tcp, or both"
+      .alias \x, \executable
+      .default \x, null
+      .describe \x, "the executable program to feed the data from serial port to its stdin"
       .boolean <[r v]>
       .demand <[p b d y s v r q]>
 
 
   handler: (argv) ->
     {config} = global
-    {uart, parity, filepath, verbose, raw, queued, capture} = argv
+    {uart, parity, filepath, verbose, raw, queued, capture, executable} = argv
     baudRate = argv.baud
     dataBits = argv.databits
     stopBits = argv.stopbits
@@ -91,6 +113,8 @@ module.exports = exports =
 
     uart = path.basename real_filepath
 
+    ep = new ExecutableProcess executable, logger
+
     PRINT = (chunk, from_serial=yes) ->
       text = chunk.toString 'hex'
       text = text.toUpperCase!
@@ -105,6 +129,7 @@ module.exports = exports =
       PRINT chunk, yes
       ts.broadcast chunk
       ws.broadcast chunk
+      ep.feed chunk
 
     filename = path.basename filepath
     filename = filename.substring 4 if filename.startsWith "tty."

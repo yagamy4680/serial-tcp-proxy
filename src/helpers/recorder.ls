@@ -82,6 +82,7 @@ class Recorder extends StepTimer
     xs = [ (self.serialize_packet p) for p in packets ]
     xs.push ''
     xs = xs.join '\n'
+    return unless xs.length > 0
     self.wait_stream_drain = no
     logger.info "writing #{xs.length} bytes to local disk"
     cb = ->
