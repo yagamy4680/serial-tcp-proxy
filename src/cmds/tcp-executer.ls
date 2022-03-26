@@ -57,6 +57,6 @@ module.exports = exports =
 
     tcp.on \error, (err) -> logger.error err
 
-    tcp.on \data, (data) -> exe.feed data
+    tcp.on \data, (data) -> exe.feed data, "src2dst"
 
     tcp.connect port, server, -> logger.info "connected."

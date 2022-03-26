@@ -17,7 +17,7 @@ const PACKET_LOG_LEVEL_ERROR = 'E'
 
 class Parser
   (@parent, @name, pino) ->
-    @logger = pino.child {category: 'CmdParser'}
+    @logger = pino.child {group: 'CmdParser'}
     return
 
   parse_line: (data) ->
@@ -30,8 +30,11 @@ class Parser
     hexes = buffer.toString 'hex'
     line = buffer.toString!
     xs = line.split PACKET_DELIMITER
-    [prefix, index, category, sub_category, ...payloads] = xs
-    return self.process_debug_packet index, category, sub_category, payloads if prefix == PREFIX_LOGGING
+    [prefix, index, group, key, ...payloads] = xs
+    index = parseInt index
+    return self.process_debug_packet index, group, key, payloads if prefix == PREFIX_LOGGING
+    return self.process_metadata_packet index, group, key, payloads if prefix == PREFIX_META_OUT
+    return self.process_event_packet index, group, key, payloads if prefix == PREFIX_EVT_OUT
     return logger.info "#{name}/stdout: #{line.gray}, `#{prefix}`, #{line.length} bytes"
 
   process_debug_packet: (index, level, fileline, payloads) ->
@@ -46,10 +49,23 @@ class Parser
     return logger.error "#{name}<#{source}##{line}>: #{text.red}"    if level is PACKET_LOG_LEVEL_ERROR
     return logger.info " #{name}<#{source}##{line}>: #{text.green} (unknown level = #{level.red})"
 
+  process_metadata_packet: (index, group, key, payloads) ->
+    {logger, name} = self = @
+    key = lodash.padEnd key, 16, ' '
+    return logger.info "#{name}:#{group.magenta}[#{key.white}] = #{payloads[0].yellow}"
+
+  process_event_packet: (index, group, key, payloads) ->
+    {logger, name} = self = @
+    try
+      json = JSON.parse payloads[0]
+    catch
+      return logger.info "#{name}:EVT:[#{group.white}.#{key.white}] => (invalid json) => #{payloads[0].red}"
+    return logger.info "#{name}:EVT:[#{group.white}.#{key.white}] => #{JSON.stringify json}"
+
 
 class Generator
   (@parent, @name, pino) ->
-    @logger = pino.child {category: 'CmdParser'}
+    @logger = pino.child {group: 'CmdParser'}
     @index = 0
     return
   
