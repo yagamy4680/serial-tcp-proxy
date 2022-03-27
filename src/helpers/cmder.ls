@@ -1,12 +1,15 @@
+EventEmitter = require \events
 require! <[lodash]>
 
 const PACKET_DELIMITER = '\t'
+const PACKET_TERMINATOR = '\n'
 
 const PREFIX_LOGGING = '#'
 const PREFIX_META_OUT = '!'
 const PREFIX_DATA_OUT = '~'
 const PREFIX_DATA_IN = '~'
 const PREFIX_EVT_OUT = '%'
+const PREFIX_EVT_IN = '%'
 const PREFIX_FUNC_RSP = '$'
 
 const PACKET_LOG_LEVEL_DEBUG = 'D'
@@ -14,8 +17,11 @@ const PACKET_LOG_LEVEL_INFO  = 'I'
 const PACKET_LOG_LEVEL_WARN  = 'W'
 const PACKET_LOG_LEVEL_ERROR = 'E'
 
+const PACKET_META_GROUP_PREBUILT_PROPERTY = 'P'
+const PACKET_META_GROUP_TIMER = 'T'
 
-class Parser
+
+class Parser extends EventEmitter
   (@parent, @name, pino) ->
     @logger = pino.child {group: 'CmdParser'}
     return
@@ -51,8 +57,11 @@ class Parser
 
   process_metadata_packet: (index, group, key, payloads) ->
     {logger, name} = self = @
-    key = lodash.padEnd key, 16, ' '
-    return logger.info "#{name}:#{group.magenta}[#{key.white}] = #{payloads[0].yellow}"
+    if PACKET_META_GROUP_TIMER == group
+      self.emit 'timer-req', key, parseInt(payloads[0])
+    else
+      key = lodash.padEnd key, 16, ' '
+      return logger.info "#{name}:#{group.magenta}[#{key.white}] = #{payloads[0].yellow}"
 
   process_event_packet: (index, group, key, payloads) ->
     {logger, name} = self = @
@@ -68,6 +77,10 @@ class Generator
     @logger = pino.child {group: 'CmdParser'}
     @index = 0
     return
+
+  to_buffer: (tokens) ->
+    xs = tokens.join PACKET_DELIMITER
+    return Buffer.from "#{xs}#{PACKET_TERMINATOR}"
   
   gen_data_packet: (chunk, channel) ->
     {logger, name, index} = self = @
@@ -75,8 +88,16 @@ class Generator
     hexes = chunk.toString 'hex'
     hexes = hexes.toUpperCase!
     xs = [PREFIX_DATA_IN, index.toString!, channel, "livescript", hexes]
-    xs = xs.join PACKET_DELIMITER
-    return "#{xs}\n"
+    xs = self.to_buffer xs
+    return xs
+
+  gen_event_packet: (group, evt, text) ->
+    {logger, name, index} = self = @
+    self.index = index + 1
+    xs = [PREFIX_EVT_IN, index.toString!, group, evt, text]
+    xs = self.to_buffer xs
+    return xs
+
 
 
 module.exports = exports = {Parser, Generator}
