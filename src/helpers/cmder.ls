@@ -18,13 +18,19 @@ const PACKET_LOG_LEVEL_WARN  = 'W'
 const PACKET_LOG_LEVEL_ERROR = 'E'
 
 const PACKET_META_GROUP_PREBUILT_PROPERTY = 'P'
+const PACKET_META_GROUP_EEPROM_PROPERTY = 'E'
 const PACKET_META_GROUP_TIMER = 'T'
+
+const PACKET_EVENT_GROUP_LIFECYCLE = 'L'
 
 
 class Parser extends EventEmitter
   (@parent, @name, pino) ->
     @logger = pino.child {group: 'CmdParser'}
     return
+
+  set_name: (name) ->
+    @name = name
 
   parse_line: (data) ->
     {logger, name} = self = @
@@ -49,19 +55,22 @@ class Parser extends EventEmitter
     source = lodash.padStart source, 10, ' '
     line = lodash.padEnd line, 4, ' '
     text = payloads.join PACKET_DELIMITER
-    return logger.debug "#{name}<#{source}##{line}>: #{text.gray}"   if level is PACKET_LOG_LEVEL_DEBUG
-    return logger.info " #{name}<#{source}##{line}>: #{text.green}"  if level is PACKET_LOG_LEVEL_INFO
-    return logger.warn " #{name}<#{source}##{line}>: #{text.yellow}" if level is PACKET_LOG_LEVEL_WARN
-    return logger.error "#{name}<#{source}##{line}>: #{text.red}"    if level is PACKET_LOG_LEVEL_ERROR
-    return logger.info " #{name}<#{source}##{line}>: #{text.green} (unknown level = #{level.red})"
+    return logger.debug "#{name} < #{source} ##{line}>: #{text.green}"   if level is PACKET_LOG_LEVEL_DEBUG
+    return logger.info " #{name} < #{source} ##{line}>: #{text.white}"  if level is PACKET_LOG_LEVEL_INFO
+    return logger.warn " #{name} < #{source} ##{line}>: #{text.yellow}" if level is PACKET_LOG_LEVEL_WARN
+    return logger.error "#{name} < #{source} ##{line}>: #{text.red}"    if level is PACKET_LOG_LEVEL_ERROR
+    return logger.info " #{name} < #{source} ##{line}>: #{text.gray} (unknown level = #{level.red})"
 
   process_metadata_packet: (index, group, key, payloads) ->
     {logger, name} = self = @
+    xs = lodash.padEnd key, 16, ' '
+    logger.info "#{name}:#{group.magenta}[#{xs.white}] = #{payloads[0].yellow}"
     if PACKET_META_GROUP_TIMER == group
       self.emit 'timer-req', key, parseInt(payloads[0])
-    else
-      key = lodash.padEnd key, 16, ' '
-      return logger.info "#{name}:#{group.magenta}[#{key.white}] = #{payloads[0].yellow}"
+    else if PACKET_META_GROUP_EEPROM_PROPERTY == group
+      self.emit 'metadata::eeprom', key, payloads[0]
+    else if PACKET_META_GROUP_PREBUILT_PROPERTY == group
+      self.emit 'metadata::prebuilt', key, payloads[0]
 
   process_event_packet: (index, group, key, payloads) ->
     {logger, name} = self = @
@@ -69,6 +78,7 @@ class Parser extends EventEmitter
       json = JSON.parse payloads[0]
     catch
       return logger.info "#{name}:EVT:[#{group.white}.#{key.white}] => (invalid json) => #{payloads[0].red}"
+    self.emit "event::lifecycle", key, json if group == PACKET_EVENT_GROUP_LIFECYCLE
     return logger.info "#{name}:EVT:[#{group.white}.#{key.white}] => #{JSON.stringify json}"
 
 

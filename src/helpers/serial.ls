@@ -4,7 +4,7 @@ Recorder = require \./recorder
 require! <[byline through2]>
 
 module.exports = exports = class SerialServer extends EventEmitter
-  (pino, @filepath, @baudRate=9600, @parity='none', @stopBits=1, @dataBits=8, @raw=no, queued=0, capture) ->
+  (pino, @filepath, @baudRate=9600, @parity='none', @stopBits=1, @dataBits=8, @raw=no, queued=0, capture, @verbose=yes) ->
     self = @
     self.data_buffer = []
     logger = @logger = pino.child {category: 'SerialServer'}
@@ -28,30 +28,30 @@ module.exports = exports = class SerialServer extends EventEmitter
     return self.emit \bytes, chunk
 
   at_timer_expiry: ->
-    {data_buffer, queued} = self = @
+    {data_buffer, queued, verbose} = self = @
     return unless queued
     return unless data_buffer.length > 0
     self.data_buffer = []
     chunk = Buffer.from data_buffer
-    @logger.debug "emit queued data (#{(chunk.toString 'hex').toUpperCase!}), #{data_buffer.length} bytes"
+    @logger.debug "emit queued data (#{(chunk.toString 'hex').toUpperCase!}), #{data_buffer.length} bytes" if verbose
     return self.emit_bytes_internally chunk
 
   emit_bytes: (chunk, immediate=yes) ->
-    {logger, data_buffer, queued} = self = @
+    {logger, data_buffer, queued, verbose} = self = @
     return self.emit_bytes_internally chunk if immediate
     return self.emit_bytes_internally chunk unless queued
-    logger.debug "receive #{chunk.length} bytes from serial (#{(chunk.toString 'hex').toUpperCase!}) but queued"
+    logger.debug "receive #{chunk.length} bytes from serial (#{(chunk.toString 'hex').toUpperCase!}) but queued" if verbose
     xs = [ x for x in chunk ]
     self.data_buffer = data_buffer ++ xs
 
   start_line_mode: (done) ->
-    {connected, filepath, opts, p, logger} = self = @
+    {connected, filepath, opts, p, logger, verbose} = self = @
     return if connected
     logger.info "opening #{filepath.yellow} with options: #{(JSON.stringify opts).yellow} in LINE mode ..."
     (err) <- p.open
     return done err if err?
     self.connected = yes
-    logger.debug "opened"
+    logger.debug "opened" if verbose
 
     reader = byline.createStream!
     reader.on 'data', (line) -> return self.emit \line, line
@@ -67,13 +67,13 @@ module.exports = exports = class SerialServer extends EventEmitter
 
 
   start_raw_mode: (done) ->
-    {connected, filepath, opts, p, logger} = self = @
+    {connected, filepath, opts, p, logger, verbose} = self = @
     return if connected
     logger.info "opening #{filepath.yellow} with options: #{(JSON.stringify opts).yellow} in RAW mode ..."
     (err) <- p.open
     return done err if err?
     self.connected = yes
-    logger.debug "opened"
+    logger.debug "opened" if verbose
     p.on \data, (chunk) -> return self.emit_bytes chunk, no
     return done!
 
