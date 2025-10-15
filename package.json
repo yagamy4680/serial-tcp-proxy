@@ -27,7 +27,7 @@
     "pino": "^7.9.1",
     "pino-pretty": "^7.5.4",
     "request": "^2.88.2",
-    "serialport": "^9.0.1",
+    "serialport": "^12.0.0",
     "socket.io": "^4.4.1",
     "through2": "^4.0.2",
     "xterm": "^4.8.1",
