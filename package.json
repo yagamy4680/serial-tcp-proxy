@@ -19,24 +19,22 @@
     "src/"
   ],
   "dependencies": {
+    "@xterm/xterm": "^5.5.0",
     "byline": "^5.0.0",
     "colors": "^1.4.0",
-    "express": "^4.17.1",
+    "express": "^4.21.2",
     "livescript": "github:ischenkodv/LiveScript",
     "lodash": "^4.17.20",
-    "pino": "^7.9.1",
-    "pino-pretty": "^7.5.4",
-    "request": "^2.88.2",
-    "serialport": "^12.0.0",
-    "socket.io": "^4.4.1",
+    "pino": "^10.0.0",
+    "pino-pretty": "^13.1.2",
+    "serialport": "^13.0.0",
+    "socket.io": "^4.8.1",
     "through2": "^4.0.2",
-    "xterm": "^4.8.1",
-    "yargs": "^17.3.1"
+    "yargs": "^18.0.0"
   },
   "devDependencies": {
     "standard-version": "^9.0.0"
   },
-  "optionalDependencies": {},
   "scripts": {
     "release": "standard-version"
   },
