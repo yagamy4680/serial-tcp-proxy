@@ -32,15 +32,6 @@
     "through2": "^4.0.2",
     "yargs": "^18.0.0"
   },
-  "devDependencies": {
-    "standard-version": "^9.0.0"
-  },
-  "scripts": {
-    "release": "standard-version"
-  },
-  "bin": {
-    "ttt": "./index.js"
-  },
   "pkg": {
     "assets": [
       "src/**/*.ls"
