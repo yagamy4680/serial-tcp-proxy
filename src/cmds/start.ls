@@ -1,4 +1,4 @@
-SerialPort = require \serialport
+{SerialPort} = require \serialport
 SerialServer = require \../helpers/serial
 TcpServer = require \../helpers/tcp
 WebServer = require \../helpers/web

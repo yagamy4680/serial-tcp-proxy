@@ -1,5 +1,5 @@
 EventEmitter = require \events
-SerialPort = require \serialport
+{SerialPort} = require \serialport
 Recorder = require \./recorder
 require! <[byline through2]>
 
@@ -11,8 +11,8 @@ module.exports = exports = class SerialServer extends EventEmitter
     recorder = @recorder = new Recorder self, logger, capture
     autoOpen = no
     connected = no
-    opts = @opts = {autoOpen, baudRate, dataBits, parity, stopBits}
-    p = @p = new SerialPort filepath, opts
+    opts = @opts = {autoOpen, baudRate, dataBits, parity, stopBits, path: filepath}
+    p = @p = new SerialPort opts
     p.on \error, (err) -> return self.on_error err
     p.on \close, -> return self.on_close!
     self.queued = queued > 0
