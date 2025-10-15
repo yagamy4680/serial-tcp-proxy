@@ -11,9 +11,9 @@ require! <[yargs colors]>
 config = global.config = new ConfigManager {}
 
 argv =
-  yargs
+  yargs!
     .scriptName 'stp'
     .commandDir 'cmds', {extensions: <[js ls]>}
     .demandCommand!
     .help!
-    .argv
+    .parse process.argv.slice 2
