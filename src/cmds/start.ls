@@ -149,7 +149,7 @@ module.exports = exports =
     ts.on \data, (chunk, connection) ->
       PRINT chunk, no
       ss.write chunk
-      ws.broadcast 'from_serial', {chunk: chunk.toString 'base64'}
+      ws.broadcast 'to_serial', {chunk: chunk.toString 'base64'}
       module.to_serial_bytes += chunk.length
 
     on_timeout = ->
