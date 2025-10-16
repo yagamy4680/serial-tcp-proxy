@@ -50,6 +50,6 @@ module.exports = exports = class WebServer extends EventEmitter
     logger.warn "disconnected, and removed from slots[#{idx}]"
     return connections.splice idx, 1 if idx?
 
-  broadcast: (chunk) ->    
-    {connections} = self = @
-    [ (c.write chunk) for c in connections ]
+  broadcast: (evt, payload) ->
+    @.channel.emit evt, payload
+

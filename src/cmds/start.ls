@@ -115,6 +115,9 @@ module.exports = exports =
 
     ep = new ExecutableProcess executable, logger
 
+    module.from_serial_bytes = 0
+    module.to_serial_bytes = 0
+
     PRINT = (chunk, from_serial=yes) ->
       text = chunk.toString 'hex'
       text = text.toUpperCase!
@@ -128,8 +131,9 @@ module.exports = exports =
     ss.on \bytes, (chunk) -> 
       PRINT chunk, yes
       ts.broadcast chunk
-      ws.broadcast chunk
+      ws.broadcast 'from_serial', {chunk: chunk.toString 'base64'}
       ep.feed chunk
+      module.from_serial_bytes += chunk.length
 
     filename = path.basename filepath
     filename = filename.substring 4 if filename.startsWith "tty."
@@ -145,3 +149,14 @@ module.exports = exports =
     ts.on \data, (chunk, connection) ->
       PRINT chunk, no
       ss.write chunk
+      ws.broadcast 'from_serial', {chunk: chunk.toString 'base64'}
+      module.to_serial_bytes += chunk.length
+
+    on_timeout = ->
+      { from_serial_bytes, to_serial_bytes } = module
+      logger.info "#{uart} total: #{from_serial_bytes} bytes from serial, #{to_serial_bytes} bytes to serial"
+      ws.broadcast 'status', {from_serial_bytes, to_serial_bytes, uart}
+      module.from_serial_bytes = 0
+      module.to_serial_bytes = 0
+
+    setInterval on_timeout, 1000
