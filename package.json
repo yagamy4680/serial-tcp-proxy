@@ -36,5 +36,9 @@
     "assets": [
       "src/**/*.ls"
     ]
+  },
+  "devDependencies": {
+    "node-mavlink": "^2.3.0",
+    "socket.io-client": "^4.8.1"
   }
 }
