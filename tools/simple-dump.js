@@ -11,6 +11,9 @@ const io = require('socket.io-client');
 
 function hexDump(buffer, prefix = null, color = 'white') {
   const bytesPerLine = 16;
+  const spaces = prefix ? prefix.length + 4 : 0;
+  const space_chars = ' '.repeat(spaces);
+
   for (let i = 0; i < buffer.length; i += bytesPerLine) {
     const slice = buffer.slice(i, i + bytesPerLine);
     const hex = Array.from(slice)
@@ -19,11 +22,19 @@ function hexDump(buffer, prefix = null, color = 'white') {
     const ascii = Array.from(slice)
       .map(b => (b >= 32 && b <= 126 ? String.fromCharCode(b) : '.'))
       .join('');
+    let ts = (new Date()).toISOString().substring(11);
     let tokens = [];
-    if (prefix) {
-      tokens.push(prefix.blue);
+    if (i === 0) {
+      tokens.push(ts.gray);
+      if (prefix) {
+        tokens.push(prefix.blue);
+      }
+    }
+    else {
+      tokens.push(space_chars);
     }
     tokens.push(i.toString(16).padStart(4, '0'));
+    tokens.push(' ');
     tokens.push(hex.padEnd(bytesPerLine * 3)[color]);
     tokens.push(ascii.gray);
     let text = tokens.join(' ');
