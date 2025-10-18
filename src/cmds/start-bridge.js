@@ -163,12 +163,14 @@ module.exports = {
       }
 
       sp1.on('data', (chunk) => {
+        sp2.write(chunk);
         PRINT(chunk, true);
         ws.broadcast('from_serial', { chunk: chunk.toString('base64') });
         counters.from_serial_bytes += chunk.length;
       });
 
       sp2.on('data', (chunk) => {
+        sp1.write(chunk);
         PRINT(chunk, false);
         ws.broadcast('to_serial', { chunk: chunk.toString('base64') });
         counters.to_serial_bytes += chunk.length;
