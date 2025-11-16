@@ -4,7 +4,7 @@
 # https://tic-tac-toe.io
 # Taipei, Taiwan
 #
-require! <[os lodash fs]>
+require! <[os fs]>
 {StepTimer} = require \./step-timer
 
 const RECORDER_DATA_DIRECTION_FROM_SERIAL = '=>'
@@ -68,9 +68,9 @@ class Recorder extends StepTimer
     {uptime, direction, chunk} = p
     prefix = '!'
     ms = uptime % 1000
-    ms = lodash.padStart ms, 3, '0'
+    ms = ms.toString!.padStart(3, '0')
     sec = Math.floor (uptime / 1000)
-    sec = lodash.padStart sec, 10, '0'
+    sec = sec.toString!.padStart(10, '0')
     time = "#{sec}.#{ms}"
     hexes = (chunk.toString 'hex').toUpperCase!
     xs = [prefix, time, direction, hexes]

@@ -67,7 +67,10 @@ module.exports = exports =
       .alias \x, \executable
       .default \x, null
       .describe \x, "the executable program to feed the data from serial port to its stdin"
-      .boolean <[r v]>
+      .alias \m, \metric
+      .default \m, no
+      .describe \m, "metric mode, dump metrics data per second"
+      .boolean <[r v m]>
       .demand <[p b d y s v r q]>
 
 
@@ -154,7 +157,7 @@ module.exports = exports =
 
     on_timeout = ->
       { from_serial_bytes, to_serial_bytes } = module
-      logger.info "#{uart} total: #{from_serial_bytes} bytes from serial, #{to_serial_bytes} bytes to serial"
+      logger.info "#{uart} total: #{from_serial_bytes} bytes from serial, #{to_serial_bytes} bytes to serial" if argv.metric
       ws.broadcast 'status', {from_serial_bytes, to_serial_bytes, uart}
       module.from_serial_bytes = 0
       module.to_serial_bytes = 0
