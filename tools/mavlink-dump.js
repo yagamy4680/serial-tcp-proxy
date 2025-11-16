@@ -1,3 +1,9 @@
+const path = require('path');
+const fs = require('fs').promises;
+const util = require('util');
+const zlib = require('zlib');
+const gzip = util.promisify(zlib.gzip);
+
 const colors = require('colors');
 const yargs = require('yargs');
 const io = require('socket.io-client');
@@ -52,7 +58,7 @@ const REGISTRY = {
 };
 
 class MavLinkDumper {
-  constructor(systemId = 255, componentId = 190) {
+  constructor(systemId = 255, componentId = 190, destination_dir = null, quiet = false, interval = 60) {
     this.uart = 'unknown';
     this.tx_splitter = new MavLinkPacketSplitter();
     this.tx_parser = new MavLinkPacketParser();
@@ -66,6 +72,13 @@ class MavLinkDumper {
     this.rx_splitter.on('data', (packet) => this.on_rx_packet(packet));
     this.tx_parser.on('data', (message) => this.on_tx_message(message));
     this.rx_parser.on('data', (message) => this.on_rx_message(message));
+    this.lines = [];
+    this.quiet = quiet;
+    this.destination_dir = destination_dir;
+    if (this.destination_dir) {
+      this.timer = setInterval(async () => await this.on_timeout(), interval * 1000);
+      setImmediate(async () => await fs.mkdir(this.destination_dir, { recursive: true }));
+    }
   }
 
   set_uart(uart) {
@@ -89,23 +102,30 @@ class MavLinkDumper {
   }
 
   dump_message(message, direction = '->', color = 'white') {
-    let { uart } = this;
+    let { uart, lines } = this;
     const clazz = REGISTRY[message.header.msgid]
+    const now = Date.now();
     if (clazz) {
       let ts = (new Date()).toISOString().substring(11);
       let { MSG_ID, MAGIC_NUMBER } = clazz;
       MSG_ID = MSG_ID.toString(16).toUpperCase().padStart(4, ' ');
       MAGIC_NUMBER = MAGIC_NUMBER.toString(16).toUpperCase().padStart(4, ' ');
       const data = message.protocol.data(message.payload, clazz);
+      let text = JSON.stringify(data, (key, value) => typeof value === "bigint" ? Number(value) : value);
       let tokens = [
         ts.gray,
         uart.blue,
         direction,
         clazz.MSG_NAME.padStart(22).yellow,
         `[${MSG_ID.cyan}]`,
-        JSON.stringify(data, (key, value) => typeof value === "bigint" ? Number(value) : value)[color],
+        text[color],
       ];
-      console.log(tokens.join(' '));
+      if (this.destination_dir) {
+        lines.push([now.toString(), direction, clazz.MSG_NAME, text].join('\t'));
+      }
+      if (!this.quiet) {
+        console.log(tokens.join(' '));
+      }
     }
   }
 
@@ -115,6 +135,27 @@ class MavLinkDumper {
 
   on_rx_message(message) {
     this.dump_message(message, '->');
+  }
+
+  async on_timeout() {
+    let { lines } = this;
+    this.lines = [];
+    if (lines.length == 0) return;
+    const now = (new Date()).toISOString().substring(0, 19).replace('T', ' ');
+    const header = ['timestamp', 'direction', 'message'].join('\t');
+    lines.unshift(header);
+    const text = lines.join('\n');
+    const buffer = Buffer.from(text, 'utf-8');
+    const compressed = await gzip(buffer);
+    const filename = path.join(this.destination_dir, `mavlink-dump-${this.uart}-${now.replace(/[: ]/g, '_')}.tsv.gz`);
+
+    try {
+      await fs.writeFile(filename, compressed);
+      console.log(`${now}: Dumped ${lines.length} messages to ${filename.green}`);
+    }
+    catch (err) {
+      console.error(`Failed to write to ${filename.red}: ${err.message}`);
+    }
   }
 }
 
@@ -134,10 +175,31 @@ const argv = yargs()
     demandOption: true,
     type: 'number'
   })
+  .option('destination_dir', {
+    alias: 'd',
+    describe: 'Directory to save dump files',
+    demandOption: true,
+    type: 'string',
+    default: null
+  })
+  .option('quiet', {
+    alias: 'q',
+    describe: 'Suppress output to console',
+    demandOption: false,
+    type: 'boolean',
+    default: false
+  })
+  .option('interval', {
+    alias: 'i',
+    describe: 'Interval between dumps (in seconds)',
+    demandOption: false,
+    type: 'number',
+    default: 60
+  })
   .help()
   .parse(process.argv.slice(2));
 
-const dumper = new MavLinkDumper();
+const dumper = new MavLinkDumper(255, 190, argv.destination_dir, argv.quiet, argv.interval);
 
 // Build WebSocket URL
 const url = `ws://${argv.host}:${argv.port}/serial`;
