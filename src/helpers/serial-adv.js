@@ -27,6 +27,8 @@ module.exports = class SerialServer extends EventEmitter {
     const { capture, queued, verbose, follow } = this.options;
     this.verbose = verbose;
     this.follow = follow;
+
+    this.port = null;
     this.connected = false;
 
     this.data_buffer = [];
@@ -44,7 +46,10 @@ module.exports = class SerialServer extends EventEmitter {
     this.check_timer = null;
     this.serial_realpath = null;
     this.serial_name = null;
-    this.port = null;
+
+    this.metric_timer = null;
+    this.from_serial_bytes = 0;
+    this.to_serial_bytes = 0;
   }
 
   get_name() {
@@ -88,6 +93,7 @@ module.exports = class SerialServer extends EventEmitter {
 
   emit_bytes(chunk, immediate = true) {
     const { logger, data_buffer, queued, verbose } = this;
+    this.from_serial_bytes += chunk.length;
     if (immediate) return this.emit_bytes_internally(chunk);
     if (!queued) return this.emit_bytes_internally(chunk);
     if (verbose) logger.debug(`receive ${chunk.length} bytes from serial (${chunk.toString('hex').toUpperCase()}) but queued`);
@@ -97,6 +103,7 @@ module.exports = class SerialServer extends EventEmitter {
 
   write(chunk) {
     const { recorder, port, connected } = this;
+    this.to_serial_bytes += chunk.length;
     this.print_chunk(chunk, false, !connected);
     recorder.save_data_from_tcp(chunk);
     if (!connected) return;
@@ -121,6 +128,15 @@ module.exports = class SerialServer extends EventEmitter {
   async on_check_serial_port() {
     if (this.connected) return;
     if (this.follow) await this.detect_serial_port();
+  }
+
+  async on_metric_timeout() {
+    let { logger, verbose, from_serial_bytes, to_serial_bytes } = this;
+    this.from_serial_bytes = 0;
+    this.to_serial_bytes = 0;
+    if (!verbose) {
+      logger.info(`${this.get_name().yellow} throughputs: ${from_serial_bytes.toString().padStart(5, ' ').blue} / ${to_serial_bytes.toString().padEnd(5, ' ').magenta} from/to serial (bytes/sec)`);
+    }
   }
 
   async start_raw_mode() {
@@ -181,6 +197,7 @@ module.exports = class SerialServer extends EventEmitter {
     recorder.start();
     await this.detect_serial_port();
     this.check_timer = setInterval(async () => await this.on_check_serial_port(), CHECK_SERIAL_PORT_INTERVAL * 1000);
+    this.metric_timer = setInterval(async () => await this.on_metric_timeout(), 1000);
   }
 
   err_exit(err, message) {
